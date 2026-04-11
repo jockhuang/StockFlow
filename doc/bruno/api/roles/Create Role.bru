@@ -1,0 +1,30 @@
+meta {
+  name: Create Role
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/roles
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "code": "PLANNER",
+    "name": "Planner",
+    "description": "Planning role",
+    "resourceIds": [1, 2, 3]
+  }
+}

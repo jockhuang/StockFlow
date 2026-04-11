@@ -1,0 +1,31 @@
+meta {
+  name: Update Resource
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/resources/1
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "code": "AUTH_PROFILE_READ",
+    "name": "Current user",
+    "path": "/api/auth/me",
+    "httpMethod": "GET",
+    "description": "Read authenticated user profile"
+  }
+}

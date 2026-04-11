@@ -1,0 +1,31 @@
+meta {
+  name: Create Inventory Item
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/inventory-items
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "sku": "WH-1004",
+    "name": "Pallet Jack",
+    "quantity": 4,
+    "location": "D-08",
+    "categoryId": 1
+  }
+}

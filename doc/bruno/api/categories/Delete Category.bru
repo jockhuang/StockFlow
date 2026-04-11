@@ -1,0 +1,20 @@
+meta {
+  name: Delete Category
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/categories/3
+  body: none
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+headers {
+  Accept: application/json
+}

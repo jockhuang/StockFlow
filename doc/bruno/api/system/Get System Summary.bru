@@ -1,0 +1,20 @@
+meta {
+  name: Get System Summary
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/system/summary
+  body: none
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+headers {
+  Accept: application/json
+}

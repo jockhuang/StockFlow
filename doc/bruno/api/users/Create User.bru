@@ -1,0 +1,31 @@
+meta {
+  name: Create User
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/users
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "username": "planner",
+    "password": "Planner@123456",
+    "displayName": "Inventory Planner",
+    "enabled": true,
+    "roleIds": [2]
+  }
+}

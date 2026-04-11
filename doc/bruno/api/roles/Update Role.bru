@@ -1,0 +1,30 @@
+meta {
+  name: Update Role
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/roles/1
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "code": "ADMIN",
+    "name": "Administrator",
+    "description": "Full access role",
+    "resourceIds": [1, 2, 3, 4, 5, 6]
+  }
+}
