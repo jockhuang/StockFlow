@@ -224,7 +224,7 @@ Backend pagination endpoints support:
 
 ## Backend Configuration
 
-Default datasource settings are defined in [backend/src/main/resources/application.properties](/Users/jock/Projects/warehouse/backend/src/main/resources/application.properties):
+Default datasource settings are defined in [backend/src/main/resources/application.properties](./backend/src/main/resources/application.properties):
 
 - URL: `jdbc:mysql://localhost:3306/warehouse`
 - Username: `root`
