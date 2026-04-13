@@ -1,4 +1,4 @@
-# Warehouse
+# StockFlow
 
 A warehouse management and inventory operations system built with Spring Boot and Vue 3. The current implementation covers user and permission management, item master data, suppliers, purchasing, sales, stock movements, inventory cost tracking, and realized profit reporting.
 
