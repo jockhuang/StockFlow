@@ -1,11 +1,11 @@
 meta {
-  name: List Users
+  name: List Supplier Relation Items
   type: http
-  seq: 1
+  seq: 6
 }
 
 get {
-  url: {{baseUrl}}/api/users?page=0&size=10&keyword=&sortBy=username&sortDir=asc
+  url: {{baseUrl}}/api/inventory-items/supplier-relations?page=0&size=10&keyword=&sortBy=sku&sortDir=asc
   body: none
   auth: basic
 }

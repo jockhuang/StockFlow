@@ -1,11 +1,11 @@
 meta {
-  name: List Users
+  name: List Purchase Orders
   type: http
   seq: 1
 }
 
 get {
-  url: {{baseUrl}}/api/users?page=0&size=10&keyword=&sortBy=username&sortDir=asc
+  url: {{baseUrl}}/api/purchase-orders?page=0&size=10&keyword=&sortBy=createdAt&sortDir=desc
   body: none
   auth: basic
 }

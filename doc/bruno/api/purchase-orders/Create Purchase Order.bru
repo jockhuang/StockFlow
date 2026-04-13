@@ -1,0 +1,32 @@
+meta {
+  name: Create Purchase Order
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/purchase-orders
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "inventoryItemId": 1,
+    "supplierId": 1,
+    "quantity": 10,
+    "unitPrice": 45.90,
+    "referenceNo": "PO-20260413-001",
+    "remark": "Restock for April"
+  }
+}

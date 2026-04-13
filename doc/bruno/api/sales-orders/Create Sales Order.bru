@@ -1,0 +1,32 @@
+meta {
+  name: Create Sales Order
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/sales-orders
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "inventoryItemId": 1,
+    "quantity": 3,
+    "unitPrice": 89.00,
+    "customerName": "Blue Ocean Retail",
+    "referenceNo": "SO-20260413-001",
+    "remark": "Priority shipment"
+  }
+}

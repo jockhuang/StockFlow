@@ -1,0 +1,27 @@
+meta {
+  name: Update Item Supplier Relations
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/api/inventory-items/1/supplier-relations
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "supplierIds": [1, 2]
+  }
+}

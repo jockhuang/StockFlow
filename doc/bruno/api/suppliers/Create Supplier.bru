@@ -1,0 +1,34 @@
+meta {
+  name: Create Supplier
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/suppliers
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "code": "SUP-003",
+    "name": "North Harbor Tools",
+    "contactPerson": "Emma Li",
+    "phone": "+64 9 555 0199",
+    "email": "emma@northharbor.example",
+    "address": "Auckland",
+    "description": "Hand tools supplier",
+    "inventoryItemIds": []
+  }
+}
