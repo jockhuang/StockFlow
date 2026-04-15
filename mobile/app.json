@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "StockFlow Mobile",
+    "slug": "stockflow-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.warehouse.stockflow"
+    },
+    "android": {
+      "package": "com.warehouse.stockflow"
+    },
+    "extra": {
+      "apiBaseUrl": "http://192.168.0.18:8080"
+    }
+  }
+}
