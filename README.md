@@ -1,11 +1,12 @@
 # StockFlow
 
-A warehouse management and inventory operations system built with Spring Boot and Vue 3. The current implementation covers user and permission management, item master data, suppliers, purchasing, sales, stock movements, inventory cost tracking, and realized profit reporting.
+A warehouse management and inventory operations system built with Spring Boot, Vue 3, and Expo React Native. The current implementation covers user and permission management, item master data, suppliers, purchasing, sales, stock movements, inventory cost tracking, realized profit reporting, and a mobile client for iOS and Android.
 
 ## Tech Stack
 
 - Backend: Spring Boot `4.0.5`, Spring Security, Spring Data JPA
 - Frontend: Vue `3.5.31`, TypeScript `6.0.0`, Vite `8.0.3`
+- Mobile: Expo `53`, React Native `0.79`, React `19`
 - Build: Maven `3.9+`, npm
 - Database: MySQL, default database name `warehouse`
 
@@ -13,6 +14,7 @@ A warehouse management and inventory operations system built with Spring Boot an
 
 - `backend`: Spring Boot API for RBAC, inventory, purchasing, and sales
 - `frontend`: Vue 3 admin application
+- `mobile`: Expo React Native application for iOS and Android
 - `pom.xml`: Maven aggregator entrypoint
 - `doc`: supplementary documents
 
@@ -173,6 +175,25 @@ Current calculation rules:
   - create, edit, delete
   - maintain code, name, HTTP method, path, and description
 
+### 13. Mobile Application
+
+- Dedicated Expo React Native app under `mobile`
+- Supports both iOS and Android from one codebase
+- Connects to the same Spring Boot backend APIs as the web frontend
+- Uses HTTP Basic authentication against `/api/auth/me`
+- Covers:
+  - Dashboard
+  - Inventory
+  - Transactions
+  - Categories
+  - Suppliers
+  - Item supplier relations
+  - Purchase orders
+  - Sales orders
+  - Users
+  - Roles
+  - Resources
+
 ## Frontend Pages
 
 Current main pages:
@@ -188,6 +209,23 @@ Current main pages:
 - `/security/users`
 - `/security/roles`
 - `/security/resources`
+
+## Mobile App Screens
+
+Current main mobile screens:
+
+- `Home`
+- `Dashboard`
+- `Inventory`
+- `Transactions`
+- `Categories`
+- `Suppliers`
+- `Item Supplier Relations`
+- `Purchase Orders`
+- `Sales Orders`
+- `Users`
+- `Roles`
+- `Resources`
 
 ## Backend API Modules
 
@@ -257,6 +295,36 @@ npm run dev
 
 In development, the frontend proxies `/api/*` to `http://localhost:8080`.
 
+### Start Mobile App
+
+```bash
+cd mobile
+npm install
+npm run start
+```
+
+Run iOS:
+
+```bash
+cd mobile
+npm run ios
+```
+
+Run Android:
+
+```bash
+cd mobile
+npm run android
+```
+
+Mobile backend URL notes:
+
+- iOS Simulator: `http://localhost:8080`
+- Android Emulator: `http://10.0.2.2:8080`
+- Physical device: use your computer's LAN IP, for example `http://192.168.1.20:8080`
+
+The default mobile API base URL is configured in `mobile/app.json`.
+
 ## Build
 
 From the repository root:
@@ -271,6 +339,25 @@ Frontend build only:
 ```bash
 cd frontend
 npm run build
+```
+
+Mobile build only:
+
+```bash
+cd mobile
+npm run build
+```
+
+Maven mobile module only:
+
+```bash
+mvn -pl mobile package
+```
+
+Skip the mobile module in Maven when needed:
+
+```bash
+mvn package -Dmobile.skip=true
 ```
 
 Backend tests only:
