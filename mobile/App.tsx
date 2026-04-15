@@ -28,20 +28,20 @@ function LoginScreen() {
     try {
       await signIn({ baseUrl, username, password })
     } catch (error) {
-      Alert.alert('登录失败', error instanceof Error ? error.message : 'Unable to sign in.')
+      Alert.alert('Sign In Failed', error instanceof Error ? error.message : 'Unable to sign in.')
     }
   }
 
   return (
-    <Screen title="登录" subtitle="StockFlow Mobile">
-      <Card title="连接后端">
+    <Screen title="Sign In" subtitle="StockFlow Mobile">
+      <Card title="Backend Connection">
         <Text style={{ color: '#66748f' }}>
-          iOS 模拟器可使用 `http://localhost:8080`，Android 模拟器建议使用 `http://10.0.2.2:8080`。
+          Use `http://localhost:8080` for the iOS Simulator and `http://10.0.2.2:8080` for the Android Emulator.
         </Text>
         <TextField label="API Base URL" value={baseUrl} onChangeText={setBaseUrl} keyboardType="url" />
-        <TextField label="用户名" value={username} onChangeText={setUsername} />
-        <TextField label="密码" value={password} onChangeText={setPassword} secureTextEntry />
-        <Button label={signingIn ? '登录中...' : '登录'} onPress={submit} disabled={signingIn} />
+        <TextField label="Username" value={username} onChangeText={setUsername} />
+        <TextField label="Password" value={password} onChangeText={setPassword} secureTextEntry />
+        <Button label={signingIn ? 'Signing In...' : 'Sign In'} onPress={submit} disabled={signingIn} />
       </Card>
     </Screen>
   )
@@ -52,7 +52,7 @@ function AppNavigator() {
   const [screen, setScreen] = useState<AppScreenKey | null>(null)
 
   if (!ready) {
-    return <LoadingBlock label="正在恢复会话..." />
+    return <LoadingBlock label="Restoring session..." />
   }
 
   if (!profile || !api) {

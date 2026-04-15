@@ -6,9 +6,9 @@ import type { SimpleOption, StockMovement } from '../types'
 import type { ScreenProps } from './common'
 
 const typeOptions = [
-  { label: '全部类型', value: '' },
-  { label: '采购', value: 'PURCHASE' },
-  { label: '销售', value: 'SALE' },
+  { label: 'All Types', value: '' },
+  { label: 'Purchase', value: 'PURCHASE' },
+  { label: 'Sale', value: 'SALE' },
 ]
 
 export function TransactionsScreen({ api, onBack }: ScreenProps) {
@@ -29,7 +29,7 @@ export function TransactionsScreen({ api, onBack }: ScreenProps) {
       const options = await api.listSupplierOptions()
       setSuppliers(options)
     } catch (error) {
-      Alert.alert('加载供应商失败', error instanceof Error ? error.message : 'Unable to load suppliers.')
+      Alert.alert('Load Failed', error instanceof Error ? error.message : 'Unable to load suppliers.')
     }
   }
 
@@ -48,30 +48,30 @@ export function TransactionsScreen({ api, onBack }: ScreenProps) {
       setPage(response.page)
       setTotalPages(response.totalPages)
     } catch (error) {
-      Alert.alert('加载流水失败', error instanceof Error ? error.message : 'Unable to load movements.')
+      Alert.alert('Load Failed', error instanceof Error ? error.message : 'Unable to load movements.')
     }
   }
 
   return (
-    <Screen title="交易流水" subtitle="Purchase And Sales" right={<Button label="返回" variant="secondary" onPress={onBack} />}>
-      <Card title="筛选">
-        <TextField label="关键字" value={keyword} onChangeText={setKeyword} placeholder="SKU、商品、供应商、备注、单号" />
-        <PickerField label="类型" value={type} options={typeOptions} onChange={setType} />
+    <Screen title="Transactions" subtitle="Purchase And Sales" right={<Button label="Back" variant="secondary" onPress={onBack} />}>
+      <Card title="Filters">
+        <TextField label="Keyword" value={keyword} onChangeText={setKeyword} placeholder="SKU, item, supplier, remark, or reference" />
+        <PickerField label="Type" value={type} options={typeOptions} onChange={setType} />
         <PickerField
-          label="供应商"
+          label="Supplier"
           value={supplierId}
-          options={[{ label: '全部供应商', value: 0 }, ...suppliers.map((item) => ({ label: `${item.code} · ${item.name}`, value: item.id }))]}
+          options={[{ label: 'All Suppliers', value: 0 }, ...suppliers.map((item) => ({ label: `${item.code} · ${item.name}`, value: item.id }))]}
           onChange={setSupplierId}
         />
-        <Button label="查询" variant="secondary" onPress={() => void load(0)} />
+        <Button label="Search" variant="secondary" onPress={() => void load(0)} />
       </Card>
-      <Card title="流水列表">
+      <Card title="Movement List">
         {items.map((item) => (
           <ListRow
             key={item.id}
             title={`${item.inventorySku} · ${item.inventoryName}`}
-            subtitle={`${item.type} · 数量 ${item.quantity} · 单价 ${formatMoney(item.unitPrice)}`}
-            meta={`${formatDateTime(item.occurredAt)} · 供应商 ${item.supplierName || '-'} · 单号 ${item.referenceNo || '-'}`}
+            subtitle={`${item.type} · Quantity ${item.quantity} · Unit Price ${formatMoney(item.unitPrice)}`}
+            meta={`${formatDateTime(item.occurredAt)} · Supplier ${item.supplierName || '-'} · Reference ${item.referenceNo || '-'}`}
           />
         ))}
         <Paginator page={page} totalPages={totalPages} onPrev={() => void load(page - 1)} onNext={() => void load(page + 1)} />

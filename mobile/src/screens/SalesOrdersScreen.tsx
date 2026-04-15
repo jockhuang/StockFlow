@@ -29,7 +29,7 @@ export function SalesOrdersScreen({ api, onBack }: ScreenProps) {
     try {
       await Promise.all([loadInventoryOptions(), load(0)])
     } catch (error) {
-      Alert.alert('初始化失败', error instanceof Error ? error.message : 'Unable to initialize sales orders screen.')
+      Alert.alert('Initialization Failed', error instanceof Error ? error.message : 'Unable to initialize sales orders screen.')
     }
   }
 
@@ -52,7 +52,7 @@ export function SalesOrdersScreen({ api, onBack }: ScreenProps) {
       setPage(response.page)
       setTotalPages(response.totalPages)
     } catch (error) {
-      Alert.alert('加载销售单失败', error instanceof Error ? error.message : 'Unable to load sales orders.')
+      Alert.alert('Load Failed', error instanceof Error ? error.message : 'Unable to load sales orders.')
     }
   }
 
@@ -69,7 +69,7 @@ export function SalesOrdersScreen({ api, onBack }: ScreenProps) {
       setShowForm(false)
       await Promise.all([loadInventoryOptions(), load(0)])
     } catch (error) {
-      Alert.alert('创建销售单失败', error instanceof Error ? error.message : 'Unable to create sales order.')
+      Alert.alert('Create Failed', error instanceof Error ? error.message : 'Unable to create sales order.')
     }
   }
 
@@ -78,43 +78,43 @@ export function SalesOrdersScreen({ api, onBack }: ScreenProps) {
       await api.shipSalesOrder(id)
       await Promise.all([loadInventoryOptions(), load(page)])
     } catch (error) {
-      Alert.alert('发货失败', error instanceof Error ? error.message : 'Unable to ship sales order.')
+      Alert.alert('Ship Failed', error instanceof Error ? error.message : 'Unable to ship sales order.')
     }
   }
 
   return (
-    <Screen title="销售单" subtitle="Sales" right={<Button label="返回" variant="secondary" onPress={onBack} />}>
-      <Card title="销售单搜索" action={<Button label="新建销售单" onPress={() => setShowForm(true)} />}>
-        <TextField label="关键字" value={keyword} onChangeText={setKeyword} placeholder="商品、客户、单号" />
-        <Button label="查询" variant="secondary" onPress={() => void load(0)} />
+    <Screen title="Sales Orders" subtitle="Sales" right={<Button label="Back" variant="secondary" onPress={onBack} />}>
+      <Card title="Sales Order Search" action={<Button label="New Sales Order" onPress={() => setShowForm(true)} />}>
+        <TextField label="Keyword" value={keyword} onChangeText={setKeyword} placeholder="Item, customer, or reference" />
+        <Button label="Search" variant="secondary" onPress={() => void load(0)} />
       </Card>
-      <Card title="销售单列表">
+      <Card title="Sales Order List">
         {orders.map((item) => (
           <ListRow
             key={item.id}
             title={`${item.inventorySku} · ${item.inventoryName}`}
-            subtitle={`客户 ${item.customerName || '-'} · 数量 ${item.quantity} · 单价 ${formatMoney(item.unitPrice)}`}
-            meta={`状态 ${item.status} · 创建 ${formatDateTime(item.createdAt)} · 发货 ${formatDateTime(item.shippedAt)}`}
-            actions={item.status !== 'SHIPPED' ? <Button label="确认发货" onPress={() => void ship(item.id)} /> : undefined}
+            subtitle={`Customer ${item.customerName || '-'} · Quantity ${item.quantity} · Unit Price ${formatMoney(item.unitPrice)}`}
+            meta={`Status ${item.status} · Created ${formatDateTime(item.createdAt)} · Shipped ${formatDateTime(item.shippedAt)}`}
+            actions={item.status !== 'SHIPPED' ? <Button label="Ship" onPress={() => void ship(item.id)} /> : undefined}
           />
         ))}
         <Paginator page={page} totalPages={totalPages} onPrev={() => void load(page - 1)} onNext={() => void load(page + 1)} />
       </Card>
 
-      <ModalForm visible={showForm} title="新建销售单" onClose={() => setShowForm(false)}>
+      <ModalForm visible={showForm} title="New Sales Order" onClose={() => setShowForm(false)}>
         <Card>
           <PickerField
-            label="商品"
+            label="Item"
             value={form.inventoryItemId}
-            options={items.map((item) => ({ label: `${item.sku} · ${item.name} · 可用 ${item.availableQuantity}`, value: item.id }))}
+            options={items.map((item) => ({ label: `${item.sku} · ${item.name} · Available ${item.availableQuantity}`, value: item.id }))}
             onChange={(value) => setForm((prev) => ({ ...prev, inventoryItemId: value }))}
           />
-          <TextField label="数量" value={form.quantity} onChangeText={(value) => setForm((prev) => ({ ...prev, quantity: value }))} keyboardType="numeric" />
-          <TextField label="单价" value={form.unitPrice} onChangeText={(value) => setForm((prev) => ({ ...prev, unitPrice: value }))} keyboardType="numeric" />
+          <TextField label="Quantity" value={form.quantity} onChangeText={(value) => setForm((prev) => ({ ...prev, quantity: value }))} keyboardType="numeric" />
+          <TextField label="Unit Price" value={form.unitPrice} onChangeText={(value) => setForm((prev) => ({ ...prev, unitPrice: value }))} keyboardType="numeric" />
           <TextField label="Customer Name" value={form.customerName} onChangeText={(value) => setForm((prev) => ({ ...prev, customerName: value }))} />
           <TextField label="Reference No" value={form.referenceNo} onChangeText={(value) => setForm((prev) => ({ ...prev, referenceNo: value }))} />
           <TextField label="Remark" value={form.remark} onChangeText={(value) => setForm((prev) => ({ ...prev, remark: value }))} multiline />
-          <Button label="创建销售单" onPress={() => void save()} />
+          <Button label="Create Sales Order" onPress={() => void save()} />
         </Card>
       </ModalForm>
     </Screen>

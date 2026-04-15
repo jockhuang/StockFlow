@@ -31,7 +31,7 @@ export function UsersScreen({ api, profile, onBack }: ScreenProps) {
     try {
       await Promise.all([loadRoles(), load(0)])
     } catch (error) {
-      Alert.alert('初始化失败', error instanceof Error ? error.message : 'Unable to initialize users screen.')
+      Alert.alert('Initialization Failed', error instanceof Error ? error.message : 'Unable to initialize users screen.')
     }
   }
 
@@ -52,7 +52,7 @@ export function UsersScreen({ api, profile, onBack }: ScreenProps) {
       setPage(response.page)
       setTotalPages(response.totalPages)
     } catch (error) {
-      Alert.alert('加载用户失败', error instanceof Error ? error.message : 'Unable to load users.')
+      Alert.alert('Load Failed', error instanceof Error ? error.message : 'Unable to load users.')
     }
   }
 
@@ -77,7 +77,7 @@ export function UsersScreen({ api, profile, onBack }: ScreenProps) {
   async function save() {
     try {
       if (!editing && !form.password.trim()) {
-        throw new Error('创建用户时密码不能为空。')
+        throw new Error('Password is required when creating a user.')
       }
       const payload = {
         username: form.username,
@@ -94,44 +94,44 @@ export function UsersScreen({ api, profile, onBack }: ScreenProps) {
       setShowForm(false)
       await load(editing ? page : 0)
     } catch (error) {
-      Alert.alert('保存用户失败', error instanceof Error ? error.message : 'Unable to save user.')
+      Alert.alert('Save Failed', error instanceof Error ? error.message : 'Unable to save user.')
     }
   }
 
   async function remove(id: number) {
-    Alert.alert('删除用户', '确认删除该用户？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert('Delete User', 'Are you sure you want to delete this user?', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: '删除',
+        text: 'Delete',
         style: 'destructive',
         onPress: () => {
           void api
             .deleteUser(id)
             .then(() => load(page))
-            .catch((error) => Alert.alert('删除用户失败', error instanceof Error ? error.message : 'Unable to delete user.'))
+            .catch((error) => Alert.alert('Delete Failed', error instanceof Error ? error.message : 'Unable to delete user.'))
         },
       },
     ])
   }
 
   return (
-    <Screen title="用户" subtitle="Permission Management" right={<Button label="返回" variant="secondary" onPress={onBack} />}>
-      <Card title="搜索" action={canWrite ? <Button label="新建用户" onPress={openCreate} /> : undefined}>
-        <TextField label="关键字" value={keyword} onChangeText={setKeyword} placeholder="用户名或显示名" />
-        <Button label="查询" variant="secondary" onPress={() => void load(0)} />
+    <Screen title="Users" subtitle="Permission Management" right={<Button label="Back" variant="secondary" onPress={onBack} />}>
+      <Card title="Search" action={canWrite ? <Button label="New User" onPress={openCreate} /> : undefined}>
+        <TextField label="Keyword" value={keyword} onChangeText={setKeyword} placeholder="Username or display name" />
+        <Button label="Search" variant="secondary" onPress={() => void load(0)} />
       </Card>
-      <Card title="用户列表">
+      <Card title="User List">
         {items.map((item) => (
           <ListRow
             key={item.id}
             title={`${item.username} · ${item.displayName}`}
-            subtitle={`状态：${item.enabled ? 'Enabled' : 'Disabled'}`}
-            meta={`角色：${item.roleCodes.join(', ')}`}
+            subtitle={`Status: ${item.enabled ? 'Enabled' : 'Disabled'}`}
+            meta={`Roles: ${item.roleCodes.join(', ')}`}
             actions={
               canWrite ? (
                 <>
-                  <Button label="编辑" variant="secondary" onPress={() => openEdit(item)} />
-                  <Button label="删除" variant="danger" onPress={() => void remove(item.id)} />
+                  <Button label="Edit" variant="secondary" onPress={() => openEdit(item)} />
+                  <Button label="Delete" variant="danger" onPress={() => void remove(item.id)} />
                 </>
               ) : undefined
             }
@@ -139,7 +139,7 @@ export function UsersScreen({ api, profile, onBack }: ScreenProps) {
         ))}
         <Paginator page={page} totalPages={totalPages} onPrev={() => void load(page - 1)} onNext={() => void load(page + 1)} />
       </Card>
-      <ModalForm visible={showForm} title={editing ? '编辑用户' : '新建用户'} onClose={() => setShowForm(false)}>
+      <ModalForm visible={showForm} title={editing ? 'Edit User' : 'New User'} onClose={() => setShowForm(false)}>
         <Card>
           <TextField label="Username" value={form.username} onChangeText={(value) => setForm((prev) => ({ ...prev, username: value }))} />
           <TextField label="Password" value={form.password} onChangeText={(value) => setForm((prev) => ({ ...prev, password: value }))} secureTextEntry />
@@ -151,7 +151,7 @@ export function UsersScreen({ api, profile, onBack }: ScreenProps) {
             options={roles.map((item) => ({ label: `${item.code} · ${item.name}`, value: item.id }))}
             onChange={(value) => setForm((prev) => ({ ...prev, roleIds: value }))}
           />
-          <Button label={editing ? '更新用户' : '创建用户'} onPress={() => void save()} />
+          <Button label={editing ? 'Update User' : 'Create User'} onPress={() => void save()} />
         </Card>
       </ModalForm>
     </Screen>

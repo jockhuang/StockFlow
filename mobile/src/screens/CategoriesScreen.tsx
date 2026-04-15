@@ -42,7 +42,7 @@ export function CategoriesScreen({ api, profile, onBack }: ScreenProps) {
       setPage(response.page)
       setTotalPages(response.totalPages)
     } catch (error) {
-      Alert.alert('加载分类失败', error instanceof Error ? error.message : 'Unable to load categories.')
+      Alert.alert('Load Failed', error instanceof Error ? error.message : 'Unable to load categories.')
     }
   }
 
@@ -71,44 +71,44 @@ export function CategoriesScreen({ api, profile, onBack }: ScreenProps) {
       resetForm()
       await load(editing ? page : 0)
     } catch (error) {
-      Alert.alert('保存分类失败', error instanceof Error ? error.message : 'Unable to save category.')
+      Alert.alert('Save Failed', error instanceof Error ? error.message : 'Unable to save category.')
     }
   }
 
   async function remove(id: number) {
-    Alert.alert('删除分类', '确认删除该分类？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert('Delete Category', 'Are you sure you want to delete this category?', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: '删除',
+        text: 'Delete',
         style: 'destructive',
         onPress: () => {
           void api
             .deleteCategory(id)
             .then(() => load(page))
-            .catch((error) => Alert.alert('删除分类失败', error instanceof Error ? error.message : 'Unable to delete.'))
+            .catch((error) => Alert.alert('Delete Failed', error instanceof Error ? error.message : 'Unable to delete.'))
         },
       },
     ])
   }
 
   return (
-    <Screen title="分类" subtitle="Inventory Management" right={<Button label="返回" variant="secondary" onPress={onBack} />}>
-      <Card title="搜索" action={canWrite ? <Button label="新建" onPress={openCreate} /> : undefined}>
-        <TextField label="关键字" value={keyword} onChangeText={setKeyword} placeholder="按编码或名称搜索" />
-        <Button label="查询" variant="secondary" onPress={() => void load(0)} />
+    <Screen title="Categories" subtitle="Inventory Management" right={<Button label="Back" variant="secondary" onPress={onBack} />}>
+      <Card title="Search" action={canWrite ? <Button label="New" onPress={openCreate} /> : undefined}>
+        <TextField label="Keyword" value={keyword} onChangeText={setKeyword} placeholder="Search by code or name" />
+        <Button label="Search" variant="secondary" onPress={() => void load(0)} />
       </Card>
 
-      <Card title="分类列表">
+      <Card title="Category List">
         {items.map((item) => (
           <ListRow
             key={item.id}
             title={`${item.code} · ${item.name}`}
-            subtitle={item.description || '无描述'}
+            subtitle={item.description || 'No description'}
             actions={
               canWrite ? (
                 <>
-                  <Button label="编辑" variant="secondary" onPress={() => openEdit(item)} />
-                  <Button label="删除" variant="danger" onPress={() => remove(item.id)} />
+                  <Button label="Edit" variant="secondary" onPress={() => openEdit(item)} />
+                  <Button label="Delete" variant="danger" onPress={() => remove(item.id)} />
                 </>
               ) : undefined
             }
@@ -117,12 +117,12 @@ export function CategoriesScreen({ api, profile, onBack }: ScreenProps) {
         <Paginator page={page} totalPages={totalPages} onPrev={() => void load(page - 1)} onNext={() => void load(page + 1)} />
       </Card>
 
-      <ModalForm visible={showForm} title={editing ? '编辑分类' : '新建分类'} onClose={() => setShowForm(false)}>
+      <ModalForm visible={showForm} title={editing ? 'Edit Category' : 'New Category'} onClose={() => setShowForm(false)}>
         <Card>
           <TextField label="Code" value={code} onChangeText={setCode} />
           <TextField label="Name" value={name} onChangeText={setName} />
           <TextField label="Description" value={description} onChangeText={setDescription} multiline />
-          <Button label={editing ? '更新' : '创建'} onPress={() => void save()} />
+          <Button label={editing ? 'Update' : 'Create'} onPress={() => void save()} />
         </Card>
       </ModalForm>
     </Screen>

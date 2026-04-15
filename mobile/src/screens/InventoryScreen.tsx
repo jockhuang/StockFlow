@@ -59,7 +59,7 @@ export function InventoryScreen({ api, profile, onBack }: ScreenProps) {
       setCategories(options)
       setItemForm((prev) => ({ ...prev, categoryId: prev.categoryId || options[0]?.id || 0 }))
     } catch (error) {
-      Alert.alert('加载分类失败', error instanceof Error ? error.message : 'Unable to load categories.')
+      Alert.alert('Load Failed', error instanceof Error ? error.message : 'Unable to load categories.')
     }
   }
 
@@ -67,7 +67,7 @@ export function InventoryScreen({ api, profile, onBack }: ScreenProps) {
     try {
       setSummary(await api.getInventorySummary())
     } catch (error) {
-      Alert.alert('加载摘要失败', error instanceof Error ? error.message : 'Unable to load inventory summary.')
+      Alert.alert('Load Failed', error instanceof Error ? error.message : 'Unable to load inventory summary.')
     }
   }
 
@@ -85,7 +85,7 @@ export function InventoryScreen({ api, profile, onBack }: ScreenProps) {
       setTotalPages(response.totalPages)
       setMovementForm((prev) => ({ ...prev, inventoryItemId: prev.inventoryItemId || response.content[0]?.id || 0 }))
     } catch (error) {
-      Alert.alert('加载库存失败', error instanceof Error ? error.message : 'Unable to load inventory items.')
+      Alert.alert('Load Failed', error instanceof Error ? error.message : 'Unable to load inventory items.')
     }
   }
 
@@ -133,21 +133,21 @@ export function InventoryScreen({ api, profile, onBack }: ScreenProps) {
       setShowItemForm(false)
       await Promise.all([load(editing ? page : 0), loadSummary()])
     } catch (error) {
-      Alert.alert('保存商品失败', error instanceof Error ? error.message : 'Unable to save inventory item.')
+      Alert.alert('Save Failed', error instanceof Error ? error.message : 'Unable to save inventory item.')
     }
   }
 
   async function deleteItem(id: number) {
-    Alert.alert('删除商品', '确认删除该库存商品？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert('Delete Item', 'Are you sure you want to delete this inventory item?', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: '删除',
+        text: 'Delete',
         style: 'destructive',
         onPress: () => {
           void api
             .deleteInventoryItem(id)
             .then(() => Promise.all([load(page), loadSummary()]))
-            .catch((error) => Alert.alert('删除失败', error instanceof Error ? error.message : 'Unable to delete inventory item.'))
+            .catch((error) => Alert.alert('Delete Failed', error instanceof Error ? error.message : 'Unable to delete inventory item.'))
         },
       },
     ])
@@ -168,61 +168,61 @@ export function InventoryScreen({ api, profile, onBack }: ScreenProps) {
       setShowMovementForm(false)
       await Promise.all([load(page), loadSummary()])
     } catch (error) {
-      Alert.alert('记录流水失败', error instanceof Error ? error.message : 'Unable to record stock movement.')
+      Alert.alert('Save Failed', error instanceof Error ? error.message : 'Unable to record stock movement.')
     }
   }
 
   return (
     <Screen
-      title="库存"
+      title="Inventory"
       subtitle="Inventory"
-      right={<Button label="返回" variant="secondary" onPress={onBack} />}
+      right={<Button label="Back" variant="secondary" onPress={onBack} />}
     >
       {summary ? (
-        <Card title="库存摘要">
+        <Card title="Inventory Summary">
           <InlineStats
             stats={[
-              { label: '商品数', value: String(summary.totalItems) },
-              { label: '现货', value: String(summary.totalOnHandQuantity) },
-              { label: '在途', value: String(summary.totalInTransitQuantity ?? 0) },
-              { label: '占用', value: String(summary.totalCommittedQuantity ?? 0) },
+              { label: 'Items', value: String(summary.totalItems) },
+              { label: 'On Hand', value: String(summary.totalOnHandQuantity) },
+              { label: 'In Transit', value: String(summary.totalInTransitQuantity ?? 0) },
+              { label: 'Committed', value: String(summary.totalCommittedQuantity ?? 0) },
             ]}
           />
           {canFinancial ? (
             <InlineStats
               stats={[
-                { label: '库存成本', value: formatMoney(summary.totalInventoryCost) },
-                { label: '销售利润', value: formatMoney(summary.totalSalesProfit) },
+                { label: 'Inventory Cost', value: formatMoney(summary.totalInventoryCost) },
+                { label: 'Sales Profit', value: formatMoney(summary.totalSalesProfit) },
               ]}
             />
           ) : null}
         </Card>
       ) : null}
-      <Card title="搜索" action={
+      <Card title="Search" action={
         <>
-          {canMovement ? <Button label="库存调整" variant="secondary" onPress={() => setShowMovementForm(true)} /> : null}
-          {canWrite ? <Button label="新建商品" onPress={openCreate} /> : null}
+          {canMovement ? <Button label="Stock Adjustment" variant="secondary" onPress={() => setShowMovementForm(true)} /> : null}
+          {canWrite ? <Button label="New Item" onPress={openCreate} /> : null}
         </>
       }>
-        <TextField label="关键字" value={keyword} onChangeText={setKeyword} placeholder="SKU、名称、库位、分类" />
-        <Button label="查询" variant="secondary" onPress={() => void load(0)} />
+        <TextField label="Keyword" value={keyword} onChangeText={setKeyword} placeholder="SKU, name, location, or category" />
+        <Button label="Search" variant="secondary" onPress={() => void load(0)} />
       </Card>
-      <Card title="库存列表">
+      <Card title="Inventory List">
         {items.map((item) => (
           <ListRow
             key={item.id}
             title={`${item.sku} · ${item.name}`}
-            subtitle={`${item.categoryName} · ${item.location} · 现货 ${item.onHandQuantity} · 可用 ${item.availableQuantity}`}
+            subtitle={`${item.categoryName} · ${item.location} · On Hand ${item.onHandQuantity} · Available ${item.availableQuantity}`}
             meta={
               canFinancial
-                ? `平均成本 ${formatMoney(item.averageUnitCost)} · 库存成本 ${formatMoney(item.inventoryCost)} · 更新时间 ${formatDateTime(summary?.recentMovements?.[0]?.occurredAt)}`
-                : `供应商 ${item.supplierNames.join(', ') || '-'}`
+                ? `Average Cost ${formatMoney(item.averageUnitCost)} · Inventory Cost ${formatMoney(item.inventoryCost)} · Updated ${formatDateTime(summary?.recentMovements?.[0]?.occurredAt)}`
+                : `Suppliers ${item.supplierNames.join(', ') || '-'}`
             }
             actions={
               canWrite ? (
                 <>
-                  <Button label="编辑" variant="secondary" onPress={() => openEdit(item)} />
-                  <Button label="删除" variant="danger" onPress={() => void deleteItem(item.id)} />
+                  <Button label="Edit" variant="secondary" onPress={() => openEdit(item)} />
+                  <Button label="Delete" variant="danger" onPress={() => void deleteItem(item.id)} />
                 </>
               ) : undefined
             }
@@ -231,7 +231,7 @@ export function InventoryScreen({ api, profile, onBack }: ScreenProps) {
         <Paginator page={page} totalPages={totalPages} onPrev={() => void load(page - 1)} onNext={() => void load(page + 1)} />
       </Card>
 
-      <ModalForm visible={showItemForm} title={editing ? '编辑商品' : '新建商品'} onClose={() => setShowItemForm(false)}>
+      <ModalForm visible={showItemForm} title={editing ? 'Edit Item' : 'New Item'} onClose={() => setShowItemForm(false)}>
         <Card>
           <TextField label="SKU" value={itemForm.sku} onChangeText={(value) => setItemForm((prev) => ({ ...prev, sku: value }))} />
           <TextField label="Name" value={itemForm.name} onChangeText={(value) => setItemForm((prev) => ({ ...prev, name: value }))} />
@@ -243,20 +243,20 @@ export function InventoryScreen({ api, profile, onBack }: ScreenProps) {
             options={categories.map((item) => ({ label: `${item.code} · ${item.name}`, value: item.id }))}
             onChange={(value) => setItemForm((prev) => ({ ...prev, categoryId: value }))}
           />
-          <Button label={editing ? '更新商品' : '创建商品'} onPress={() => void saveItem()} />
+          <Button label={editing ? 'Update Item' : 'Create Item'} onPress={() => void saveItem()} />
         </Card>
       </ModalForm>
 
-      <ModalForm visible={showMovementForm} title="库存调整" onClose={() => setShowMovementForm(false)}>
+      <ModalForm visible={showMovementForm} title="Stock Adjustment" onClose={() => setShowMovementForm(false)}>
         <Card>
           <PickerField
-            label="商品"
+            label="Item"
             value={movementForm.inventoryItemId}
             options={items.map((item) => ({ label: `${item.sku} · ${item.name}`, value: item.id }))}
             onChange={(value) => setMovementForm((prev) => ({ ...prev, inventoryItemId: value }))}
           />
           <PickerField
-            label="类型"
+            label="Type"
             value={movementForm.type}
             options={[
               { label: 'Adjustment In', value: 'ADJUSTMENT_IN' },
@@ -264,12 +264,12 @@ export function InventoryScreen({ api, profile, onBack }: ScreenProps) {
             ]}
             onChange={(value) => setMovementForm((prev) => ({ ...prev, type: value }))}
           />
-          <TextField label="数量" value={movementForm.quantity} onChangeText={(value) => setMovementForm((prev) => ({ ...prev, quantity: value }))} keyboardType="numeric" />
-          <TextField label="单价" value={movementForm.unitPrice} onChangeText={(value) => setMovementForm((prev) => ({ ...prev, unitPrice: value }))} keyboardType="numeric" />
+          <TextField label="Quantity" value={movementForm.quantity} onChangeText={(value) => setMovementForm((prev) => ({ ...prev, quantity: value }))} keyboardType="numeric" />
+          <TextField label="Unit Price" value={movementForm.unitPrice} onChangeText={(value) => setMovementForm((prev) => ({ ...prev, unitPrice: value }))} keyboardType="numeric" />
           <TextField label="Reference No" value={movementForm.referenceNo} onChangeText={(value) => setMovementForm((prev) => ({ ...prev, referenceNo: value }))} />
           <TextField label="Partner Name" value={movementForm.partnerName} onChangeText={(value) => setMovementForm((prev) => ({ ...prev, partnerName: value }))} />
           <TextField label="Remark" value={movementForm.remark} onChangeText={(value) => setMovementForm((prev) => ({ ...prev, remark: value }))} multiline />
-          <Button label="提交调整" onPress={() => void saveMovement()} />
+          <Button label="Submit Adjustment" onPress={() => void saveMovement()} />
         </Card>
       </ModalForm>
     </Screen>

@@ -23,7 +23,7 @@ export function ItemSupplierRelationsScreen({ api, onBack }: ScreenProps) {
     try {
       setSuppliers(await api.listSupplierOptions())
     } catch (error) {
-      Alert.alert('加载供应商失败', error instanceof Error ? error.message : 'Unable to load suppliers.')
+      Alert.alert('Load Failed', error instanceof Error ? error.message : 'Unable to load suppliers.')
     }
   }
 
@@ -43,7 +43,7 @@ export function ItemSupplierRelationsScreen({ api, onBack }: ScreenProps) {
       setSelectedItemId(nextSelected?.id ?? 0)
       setSelectedSupplierIds(nextSelected?.supplierIds ?? [])
     } catch (error) {
-      Alert.alert('加载关系失败', error instanceof Error ? error.message : 'Unable to load item supplier relations.')
+      Alert.alert('Load Failed', error instanceof Error ? error.message : 'Unable to load item supplier relations.')
     }
   }
 
@@ -55,24 +55,24 @@ export function ItemSupplierRelationsScreen({ api, onBack }: ScreenProps) {
       await api.updateSupplierRelations(selectedItem.id, selectedSupplierIds)
       await load(page)
     } catch (error) {
-      Alert.alert('保存失败', error instanceof Error ? error.message : 'Unable to save item supplier relations.')
+      Alert.alert('Save Failed', error instanceof Error ? error.message : 'Unable to save item supplier relations.')
     }
   }
 
   return (
-    <Screen title="商品供应商关系" subtitle="Inventory Management" right={<Button label="返回" variant="secondary" onPress={onBack} />}>
-      <Card title="商品搜索">
-        <TextField label="关键字" value={keyword} onChangeText={setKeyword} placeholder="SKU、名称、库位、分类" />
-        <Button label="查询" variant="secondary" onPress={() => void load(0)} />
+    <Screen title="Item Supplier Relations" subtitle="Inventory Management" right={<Button label="Back" variant="secondary" onPress={onBack} />}>
+      <Card title="Item Search">
+        <TextField label="Keyword" value={keyword} onChangeText={setKeyword} placeholder="SKU, name, location, or category" />
+        <Button label="Search" variant="secondary" onPress={() => void load(0)} />
       </Card>
-      <Card title="商品列表">
+      <Card title="Item List">
         {items.map((item) => (
           <ListRow
             key={item.id}
             title={`${item.sku} · ${item.name}`}
             subtitle={`${item.categoryName} · ${item.location}`}
-            meta={item.id === selectedItemId ? '当前编辑中' : item.supplierNames.join(', ') || '未绑定供应商'}
-            actions={<Button label="选择" variant={item.id === selectedItemId ? 'primary' : 'secondary'} onPress={() => {
+            meta={item.id === selectedItemId ? 'Currently selected' : item.supplierNames.join(', ') || 'No suppliers assigned'}
+            actions={<Button label="Select" variant={item.id === selectedItemId ? 'primary' : 'secondary'} onPress={() => {
               setSelectedItemId(item.id)
               setSelectedSupplierIds(item.supplierIds)
             }} />}
@@ -80,14 +80,14 @@ export function ItemSupplierRelationsScreen({ api, onBack }: ScreenProps) {
         ))}
         <Paginator page={page} totalPages={totalPages} onPrev={() => void load(page - 1)} onNext={() => void load(page + 1)} />
       </Card>
-      <Card title={selectedItem ? `${selectedItem.sku} · ${selectedItem.name}` : '关系编辑'}>
+      <Card title={selectedItem ? `${selectedItem.sku} · ${selectedItem.name}` : 'Relation Editor'}>
         <MultiSelectField
-          label="允许采购的供应商"
+          label="Allowed Suppliers"
           value={selectedSupplierIds}
           options={suppliers.map((item) => ({ label: `${item.code} · ${item.name}`, value: item.id }))}
           onChange={setSelectedSupplierIds}
         />
-        <Button label="保存关系" onPress={() => void save()} />
+        <Button label="Save Relations" onPress={() => void save()} />
       </Card>
     </Screen>
   )

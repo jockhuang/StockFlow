@@ -55,7 +55,7 @@ export function SuppliersScreen({ api, profile, onBack }: ScreenProps) {
       setPage(response.page)
       setTotalPages(response.totalPages)
     } catch (error) {
-      Alert.alert('加载供应商失败', error instanceof Error ? error.message : 'Unable to load suppliers.')
+      Alert.alert('Load Failed', error instanceof Error ? error.message : 'Unable to load suppliers.')
     }
   }
 
@@ -98,44 +98,44 @@ export function SuppliersScreen({ api, profile, onBack }: ScreenProps) {
       resetForm()
       await load(editing ? page : 0)
     } catch (error) {
-      Alert.alert('保存供应商失败', error instanceof Error ? error.message : 'Unable to save supplier.')
+      Alert.alert('Save Failed', error instanceof Error ? error.message : 'Unable to save supplier.')
     }
   }
 
   async function remove(id: number) {
-    Alert.alert('删除供应商', '确认删除该供应商？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert('Delete Supplier', 'Are you sure you want to delete this supplier?', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: '删除',
+        text: 'Delete',
         style: 'destructive',
         onPress: () => {
           void api
             .deleteSupplier(id)
             .then(() => load(page))
-            .catch((error) => Alert.alert('删除供应商失败', error instanceof Error ? error.message : 'Unable to delete.'))
+            .catch((error) => Alert.alert('Delete Failed', error instanceof Error ? error.message : 'Unable to delete.'))
         },
       },
     ])
   }
 
   return (
-    <Screen title="供应商" subtitle="Inventory Management" right={<Button label="返回" variant="secondary" onPress={onBack} />}>
-      <Card title="搜索" action={canWrite ? <Button label="新建" onPress={openCreate} /> : undefined}>
-        <TextField label="关键字" value={keyword} onChangeText={setKeyword} placeholder="编码、名称、联系人、电话" />
-        <Button label="查询" variant="secondary" onPress={() => void load(0)} />
+    <Screen title="Suppliers" subtitle="Inventory Management" right={<Button label="Back" variant="secondary" onPress={onBack} />}>
+      <Card title="Search" action={canWrite ? <Button label="New" onPress={openCreate} /> : undefined}>
+        <TextField label="Keyword" value={keyword} onChangeText={setKeyword} placeholder="Code, name, contact, or phone" />
+        <Button label="Search" variant="secondary" onPress={() => void load(0)} />
       </Card>
-      <Card title="供应商列表">
+      <Card title="Supplier List">
         {items.map((item) => (
           <ListRow
             key={item.id}
             title={`${item.code} · ${item.name}`}
-            subtitle={`联系人：${item.contactPerson || '-'} · 电话：${item.phone || '-'}`}
-            meta={`商品：${formatList(item.inventoryItemNames)}`}
+            subtitle={`Contact: ${item.contactPerson || '-'} · Phone: ${item.phone || '-'}`}
+            meta={`Items: ${formatList(item.inventoryItemNames)}`}
             actions={
               canWrite ? (
                 <>
-                  <Button label="编辑" variant="secondary" onPress={() => openEdit(item)} />
-                  <Button label="删除" variant="danger" onPress={() => remove(item.id)} />
+                  <Button label="Edit" variant="secondary" onPress={() => openEdit(item)} />
+                  <Button label="Delete" variant="danger" onPress={() => remove(item.id)} />
                 </>
               ) : undefined
             }
@@ -144,7 +144,7 @@ export function SuppliersScreen({ api, profile, onBack }: ScreenProps) {
         <Paginator page={page} totalPages={totalPages} onPrev={() => void load(page - 1)} onNext={() => void load(page + 1)} />
       </Card>
 
-      <ModalForm visible={showForm} title={editing ? '编辑供应商' : '新建供应商'} onClose={() => setShowForm(false)}>
+      <ModalForm visible={showForm} title={editing ? 'Edit Supplier' : 'New Supplier'} onClose={() => setShowForm(false)}>
         <Card>
           <TextField label="Code" value={form.code} onChangeText={(value) => setForm((prev) => ({ ...prev, code: value }))} />
           <TextField label="Name" value={form.name} onChangeText={(value) => setForm((prev) => ({ ...prev, name: value }))} />
@@ -153,7 +153,7 @@ export function SuppliersScreen({ api, profile, onBack }: ScreenProps) {
           <TextField label="Email" value={form.email} onChangeText={(value) => setForm((prev) => ({ ...prev, email: value }))} keyboardType="email-address" />
           <TextField label="Address" value={form.address} onChangeText={(value) => setForm((prev) => ({ ...prev, address: value }))} multiline />
           <TextField label="Description" value={form.description} onChangeText={(value) => setForm((prev) => ({ ...prev, description: value }))} multiline />
-          <Button label={editing ? '更新' : '创建'} onPress={() => void save()} />
+          <Button label={editing ? 'Update' : 'Create'} onPress={() => void save()} />
         </Card>
       </ModalForm>
     </Screen>

@@ -27,48 +27,48 @@ export function DashboardScreen({ api, profile, onBack }: ScreenProps) {
       }
       await Promise.all(tasks)
     } catch (error) {
-      Alert.alert('加载失败', error instanceof Error ? error.message : 'Unable to load dashboard.')
+      Alert.alert('Load Failed', error instanceof Error ? error.message : 'Unable to load dashboard.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Screen title="仪表盘" subtitle="系统概览" right={<Button label="返回" variant="secondary" onPress={onBack} />}>
+    <Screen title="Dashboard" subtitle="System Overview" right={<Button label="Back" variant="secondary" onPress={onBack} />}>
       {loading ? <LoadingBlock /> : null}
-      <Card title="当前用户">
-        <ListRow title={profile.username} subtitle="已登录账号" meta={profile.authorities.join(', ')} />
+      <Card title="Current User">
+        <ListRow title={profile.username} subtitle="Signed-in account" meta={profile.authorities.join(', ')} />
       </Card>
 
       {systemSummary ? (
-        <Card title="系统状态">
+        <Card title="System Status">
           <InlineStats
             stats={[
-              { label: '应用', value: systemSummary.application },
-              { label: '状态', value: systemSummary.status },
-              { label: '时间', value: formatDateTime(systemSummary.timestamp) },
+              { label: 'Application', value: systemSummary.application },
+              { label: 'Status', value: systemSummary.status },
+              { label: 'Timestamp', value: formatDateTime(systemSummary.timestamp) },
             ]}
           />
         </Card>
       ) : null}
 
       {inventorySummary ? (
-        <Card title="库存摘要">
+        <Card title="Inventory Summary">
           <InlineStats
             stats={[
-              { label: '商品数', value: String(inventorySummary.totalItems) },
-              { label: '现货库存', value: String(inventorySummary.totalOnHandQuantity) },
-              { label: '在途', value: String(inventorySummary.totalInTransitQuantity ?? 0) },
-              { label: '已占用', value: String(inventorySummary.totalCommittedQuantity ?? 0) },
-              { label: '可用库存', value: String(inventorySummary.totalAvailableQuantity ?? 0) },
-              { label: '低库存项', value: String(inventorySummary.lowStockItems ?? 0) },
+              { label: 'Items', value: String(inventorySummary.totalItems) },
+              { label: 'On Hand', value: String(inventorySummary.totalOnHandQuantity) },
+              { label: 'In Transit', value: String(inventorySummary.totalInTransitQuantity ?? 0) },
+              { label: 'Committed', value: String(inventorySummary.totalCommittedQuantity ?? 0) },
+              { label: 'Available', value: String(inventorySummary.totalAvailableQuantity ?? 0) },
+              { label: 'Low Stock', value: String(inventorySummary.lowStockItems ?? 0) },
             ]}
           />
           {hasAuthority(profile, 'INVENTORY_FINANCIAL_READ') ? (
             <InlineStats
               stats={[
-                { label: '库存成本', value: formatMoney(inventorySummary.totalInventoryCost) },
-                { label: '销售利润', value: formatMoney(inventorySummary.totalSalesProfit) },
+                { label: 'Inventory Cost', value: formatMoney(inventorySummary.totalInventoryCost) },
+                { label: 'Sales Profit', value: formatMoney(inventorySummary.totalSalesProfit) },
               ]}
             />
           ) : null}
@@ -76,12 +76,12 @@ export function DashboardScreen({ api, profile, onBack }: ScreenProps) {
       ) : null}
 
       {inventorySummary?.recentMovements?.length ? (
-        <Card title="最新流水">
+        <Card title="Recent Movements">
           {inventorySummary.recentMovements.slice(0, 5).map((movement) => (
             <ListRow
               key={movement.id}
               title={`${movement.inventorySku} · ${movement.inventoryName}`}
-              subtitle={`${movement.type} · 数量 ${movement.quantity}`}
+              subtitle={`${movement.type} · Quantity ${movement.quantity}`}
               meta={formatDateTime(movement.occurredAt)}
             />
           ))}

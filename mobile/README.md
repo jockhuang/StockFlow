@@ -1,71 +1,71 @@
 # StockFlow Mobile
 
-基于 Expo + React Native 的移动端应用，同一套代码同时支持 iOS 和 Android，直接访问当前仓库里的 Spring Boot 后端 API。
+A mobile application built with Expo and React Native. One codebase supports both iOS and Android and connects directly to the Spring Boot backend APIs in this repository.
 
-## 已覆盖的模块
+## Covered Modules
 
-- 登录鉴权：HTTP Basic，复用 `/api/auth/me`
-- 仪表盘：系统状态、库存摘要、最近流水
-- 库存：商品列表、创建/编辑/删除、库存调整
-- 交易流水：按关键字、类型、供应商筛选
-- 分类：查询、新建、编辑、删除
-- 供应商：查询、新建、编辑、删除
-- 商品供应商关系：为商品绑定可采购供应商
-- 采购单：查询、新建、确认收货
-- 销售单：查询、新建、确认发货
-- 用户：查询、新建、编辑、删除
-- 角色：查询、新建、编辑、删除
-- 资源：查询、新建、编辑、删除
+- Authentication: HTTP Basic via `/api/auth/me`
+- Dashboard: system status, inventory summary, recent movements
+- Inventory: item list, create, edit, delete, stock adjustments
+- Transactions: filter by keyword, type, and supplier
+- Categories: query, create, edit, delete
+- Suppliers: query, create, edit, delete
+- Item Supplier Relations: bind allowed purchase suppliers to items
+- Purchase Orders: query, create, receive
+- Sales Orders: query, create, ship
+- Users: query, create, edit, delete
+- Roles: query, create, edit, delete
+- Resources: query, create, edit, delete
 
-## 目录
+## Structure
 
-- `App.tsx`：登录、导航入口
-- `src/api/client.ts`：后端接口封装
-- `src/auth/AuthContext.tsx`：会话恢复、凭据持久化
-- `src/screens/*`：各业务页面
-- `src/components/ui.tsx`：通用 UI 组件
+- `App.tsx`: login flow and app navigation
+- `src/api/client.ts`: backend API client
+- `src/auth/AuthContext.tsx`: session restore and credential persistence
+- `src/screens/*`: business screens
+- `src/components/ui.tsx`: shared UI components
 
-## 本地运行
+## Local Development
 
-先安装依赖：
+Install dependencies first:
 
 ```bash
 cd mobile
 npm install
 ```
 
-启动 Expo：
+Start Expo:
 
 ```bash
 npm run start
 ```
 
-如需原生运行：
+Run native targets:
 
 ```bash
 npm run ios
 npm run android
 ```
 
-## 后端地址
+## Backend URL
 
-移动端不能直接沿用 Web 端的相对路径，登录页已提供可编辑的 `API Base URL`。
+The mobile app cannot reuse the web app's relative API paths. The login screen includes an editable `API Base URL` field.
 
-常见开发地址：
+Common development addresses:
 
-- iOS 模拟器：`http://localhost:8080`
-- Android 模拟器：`http://10.0.2.2:8080`
-- 真机：改成你电脑在局域网中的 IP，例如 `http://192.168.1.20:8080`
+- iOS Simulator: `http://localhost:8080`
+- Android Emulator: `http://10.0.2.2:8080`
+- Physical device: use your computer's LAN IP, for example `http://192.168.1.20:8080`
 
-默认值写在 `app.json` 的 `expo.extra.apiBaseUrl`。
+The default value is configured in `app.json` under `expo.extra.apiBaseUrl`.
 
-## 默认测试账号
+## Default Test Accounts
 
 - `admin / Admin@123456`
 - `operator / Operator@123456`
 
-## 注意
+## Notes
 
-- 当前移动端为了贴合现有后端，使用 HTTP Basic 持久化用户名和密码。
-- 如果后端地址跨域或网络不可达，登录页会直接返回接口错误。
-- 我这里只生成了项目和代码，当前仓库里没有执行 `npm install`，因此还没有做真实设备编译验证。
+- The current mobile app persists username and password using HTTP Basic to match the existing backend.
+- If the backend URL is unreachable, the login screen will return the API error directly.
+- This repository now contains the project code, but runtime validation still depends on your local simulator/device environment.

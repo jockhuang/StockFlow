@@ -152,7 +152,7 @@ export function PickerField<T extends string | number>({
   value,
   options,
   onChange,
-  placeholder = '请选择',
+  placeholder = 'Select',
 }: {
   label: string
   value: T | null
@@ -187,7 +187,7 @@ export function PickerField<T extends string | number>({
                 </Pressable>
               ))}
             </ScrollView>
-            <Button label="关闭" variant="secondary" onPress={() => setOpen(false)} />
+            <Button label="Close" variant="secondary" onPress={() => setOpen(false)} />
           </View>
         </View>
       </Modal>
@@ -268,11 +268,11 @@ export function Paginator({
 }) {
   return (
     <View style={styles.paginator}>
-      <Button label="上一页" variant="secondary" onPress={onPrev} disabled={page <= 0} />
+      <Button label="Previous" variant="secondary" onPress={onPrev} disabled={page <= 0} />
       <Text style={styles.helper}>
-        第 {page + 1} / {Math.max(totalPages, 1)} 页
+        Page {page + 1} of {Math.max(totalPages, 1)}
       </Text>
-      <Button label="下一页" variant="secondary" onPress={onNext} disabled={page + 1 >= totalPages} />
+      <Button label="Next" variant="secondary" onPress={onNext} disabled={page + 1 >= totalPages} />
     </View>
   )
 }
@@ -308,7 +308,7 @@ export function ModalForm({
 }: React.PropsWithChildren<{ visible: boolean; title: string; onClose: () => void }>) {
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <Screen title={title} right={<Button label="关闭" variant="secondary" onPress={onClose} />}>
+      <Screen title={title} right={<Button label="Close" variant="secondary" onPress={onClose} />}>
         {children}
       </Screen>
     </Modal>
