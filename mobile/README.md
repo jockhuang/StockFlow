@@ -47,6 +47,33 @@ npm run ios
 npm run android
 ```
 
+## Maven Integration
+
+This mobile app is also wired into the repository Maven aggregator, similar to `frontend`.
+
+Run only the mobile module:
+
+```bash
+mvn -pl mobile package
+```
+
+Run from the repository root:
+
+```bash
+mvn package
+```
+
+Maven behavior:
+
+- `generate-resources`: runs `npm install`
+- `prepare-package`: runs `npm run build`
+
+Skip the mobile module in Maven when needed:
+
+```bash
+mvn -pl mobile package -Dmobile.skip=true
+```
+
 ## Backend URL
 
 The mobile app cannot reuse the web app's relative API paths. The login screen includes an editable `API Base URL` field.

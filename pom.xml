@@ -15,5 +15,6 @@
     <modules>
         <module>backend</module>
         <module>frontend</module>
+        <module>mobile</module>
     </modules>
 </project>
