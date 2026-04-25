@@ -7,12 +7,11 @@ meta {
 put {
   url: {{baseUrl}}/api/inventory-items/1/supplier-relations
   body: json
-  auth: basic
+  auth: bearer
 }
 
-auth:basic {
-  username: {{username}}
-  password: {{password}}
+auth:bearer {
+  token: {{token}}
 }
 
 headers {
