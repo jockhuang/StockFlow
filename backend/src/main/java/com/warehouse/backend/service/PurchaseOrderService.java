@@ -46,13 +46,20 @@ public class PurchaseOrderService {
         if (SearchKeywordSupport.isStructuredKeyword(normalizedKeyword)) {
             return purchaseOrderRepository.searchByStructuredKeyword(normalizedKeyword, PageRequest.of(page, size, sort));
         }
-        return purchaseOrderRepository.searchByTextKeyword(normalizedKeyword, PageRequest.of(page, size, sort));
+        if (SearchKeywordSupport.needsShortKeywordFallback(normalizedKeyword)) {
+            return purchaseOrderRepository.searchByShortTextKeyword(
+                    normalizedKeyword.toLowerCase(), PageRequest.of(page, size));
+        }
+        return purchaseOrderRepository.searchByTextKeyword(
+                SearchKeywordSupport.prepareFtsKeyword(normalizedKeyword), PageRequest.of(page, size));
     }
 
     public PurchaseOrder create(PurchaseOrderRequest request) {
         InventoryItem item = inventoryService.requireInventoryItem(request.inventoryItemId());
         Supplier supplier = supplierService.requireSupplier(request.supplierId());
-        if (!item.getSuppliers().contains(supplier)) {
+        // existsByIdAndSuppliersId issues a single targeted EXISTS query instead of
+        // loading the entire suppliers collection into memory for a contains() check
+        if (!inventoryService.isSupplierLinked(request.inventoryItemId(), request.supplierId())) {
             throw new IllegalArgumentException("Supplier is not linked to the selected inventory item.");
         }
 
@@ -66,6 +73,7 @@ public class PurchaseOrderService {
                 trimToNull(request.remark()),
                 LocalDateTime.now()
         );
+        order.setSearchText(SearchKeywordSupport.buildSearchText(item.getName(), supplier.getName()));
         return purchaseOrderRepository.save(order);
     }
 

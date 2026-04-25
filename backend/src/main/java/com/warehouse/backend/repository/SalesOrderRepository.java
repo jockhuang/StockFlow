@@ -15,10 +15,27 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
             """)
     Page<SalesOrder> searchByStructuredKeyword(String keyword, Pageable pageable);
 
-    @Query("""
-            select s from SalesOrder s
-            where lower(s.inventoryItem.name) like lower(concat('%', :keyword, '%'))
-               or lower(coalesce(s.customerName, '')) like lower(concat('%', :keyword, '%'))
-            """)
+    @Query(value = """
+            SELECT * FROM sales_order
+            WHERE MATCH(search_text) AGAINST (:keyword IN BOOLEAN MODE)
+            ORDER BY MATCH(search_text) AGAINST (:keyword IN BOOLEAN MODE) DESC
+            """,
+            countQuery = """
+            SELECT COUNT(*) FROM sales_order
+            WHERE MATCH(search_text) AGAINST (:keyword IN BOOLEAN MODE)
+            """,
+            nativeQuery = true)
     Page<SalesOrder> searchByTextKeyword(String keyword, Pageable pageable);
+
+    @Query(value = """
+            SELECT * FROM sales_order
+            WHERE search_text LIKE CONCAT('%', :keyword, '%')
+            ORDER BY id DESC
+            """,
+            countQuery = """
+            SELECT COUNT(*) FROM sales_order
+            WHERE search_text LIKE CONCAT('%', :keyword, '%')
+            """,
+            nativeQuery = true)
+    Page<SalesOrder> searchByShortTextKeyword(String keyword, Pageable pageable);
 }

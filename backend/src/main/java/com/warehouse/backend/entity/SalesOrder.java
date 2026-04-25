@@ -58,6 +58,10 @@ public class SalesOrder {
 
     private LocalDateTime shippedAt;
 
+    /** Denormalized full-text search corpus (item name + customer name). Set once at creation. */
+    @Column(name = "search_text", columnDefinition = "TEXT", nullable = false)
+    private String searchText = "";
+
     protected SalesOrder() {
     }
 
@@ -88,6 +92,10 @@ public class SalesOrder {
     public SalesOrderStatus getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getShippedAt() { return shippedAt; }
+
+    public void setSearchText(String searchText) {
+        this.searchText = searchText == null ? "" : searchText;
+    }
 
     public void markShipped(LocalDateTime shippedAt) {
         this.status = SalesOrderStatus.SHIPPED;
