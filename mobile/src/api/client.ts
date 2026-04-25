@@ -15,45 +15,85 @@ import type {
   UserProfile,
 } from '../types'
 
-type Credentials = {
-  username: string
-  password: string
+export type TokenPair = {
+  accessToken: string
+  refreshToken: string
+  expiresIn: number
+  refreshExpiresIn: number
 }
 
 type QueryValue = string | number | boolean | null | undefined
-
 type QueryParams = Record<string, QueryValue>
 
 export class WarehouseApi {
   private readonly normalizedBaseUrl: string
+  private accessToken: string
+  private readonly refreshToken: string
+  private readonly onTokensRefreshed?: (tokens: TokenPair) => void
 
   constructor(
     baseUrl: string,
-    private readonly credentials?: Credentials,
+    tokens: { accessToken: string; refreshToken: string },
+    onTokensRefreshed?: (tokens: TokenPair) => void,
   ) {
     this.normalizedBaseUrl = baseUrl.replace(/\/+$/, '')
+    this.accessToken = tokens.accessToken
+    this.refreshToken = tokens.refreshToken
+    this.onTokensRefreshed = onTokensRefreshed
   }
 
-  private buildUrl(path: string, query?: QueryParams) {
-    const url = new URL(`${this.normalizedBaseUrl}${path.startsWith('/') ? path : `/${path}`}`)
-    if (query) {
-      Object.entries(query).forEach(([key, value]) => {
-        if (value !== '' && value != null) {
-          url.searchParams.set(key, String(value))
-        }
-      })
+  // ── Static auth helpers ────────────────────────────────────────────────────
+
+  static async login(baseUrl: string, username: string, password: string): Promise<TokenPair> {
+    const url = `${baseUrl.replace(/\/+$/, '')}/api/auth/login`
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ username, password }),
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(text || `Login failed with status ${response.status}.`)
     }
-    return url.toString()
+
+    return (await response.json()) as TokenPair
   }
 
-  private authorizationHeader() {
-    if (!this.credentials) {
-      return ''
+  static async refresh(baseUrl: string, refreshToken: string): Promise<TokenPair> {
+    const url = `${baseUrl.replace(/\/+$/, '')}/api/auth/refresh`
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(text || `Token refresh failed with status ${response.status}.`)
     }
-    return `Basic ${encodeBase64(`${this.credentials.username}:${this.credentials.password}`)}`
+
+    return (await response.json()) as TokenPair
   }
+
+  // ── Core request with auto-refresh on 401 ─────────────────────────────────
 
   async request<T>(path: string, init: RequestInit = {}, secured = true): Promise<T> {
+    const response = await this.doFetch(path, init, secured)
+
+    if (response.status === 401 && secured) {
+      const tokens = await WarehouseApi.refresh(this.normalizedBaseUrl, this.refreshToken)
+      this.accessToken = tokens.accessToken
+      this.onTokensRefreshed?.(tokens)
+
+      const retryResponse = await this.doFetch(path, init, secured)
+      return this.extractBody(retryResponse)
+    }
+
+    return this.extractBody(response)
+  }
+
+  private doFetch(path: string, init: RequestInit, secured: boolean): Promise<Response> {
     const headers = new Headers(init.headers)
     headers.set('Accept', 'application/json')
 
@@ -61,29 +101,25 @@ export class WarehouseApi {
       headers.set('Content-Type', 'application/json')
     }
 
-    if (secured) {
-      const authHeader = this.authorizationHeader()
-      if (authHeader) {
-        headers.set('Authorization', authHeader)
-      }
+    if (secured && this.accessToken) {
+      headers.set('Authorization', `Bearer ${this.accessToken}`)
     }
 
-    const response = await fetch(this.buildUrl(path), {
-      ...init,
-      headers,
-    })
+    return fetch(this.buildUrl(path), { ...init, headers })
+  }
 
+  private async extractBody<T>(response: Response): Promise<T> {
     if (!response.ok) {
       const text = await response.text()
       throw new Error(text || `Request failed with status ${response.status}.`)
     }
 
-    if (response.status === 204) {
-      return undefined as T
-    }
+    if (response.status === 204) return undefined as T
 
     return (await response.json()) as T
   }
+
+  // ── API methods ────────────────────────────────────────────────────────────
 
   me() {
     return this.request<UserProfile>('/api/auth/me')
@@ -106,17 +142,11 @@ export class WarehouseApi {
   }
 
   createInventoryItem(payload: Record<string, unknown>) {
-    return this.request<InventoryItem>('/api/inventory-items', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
+    return this.request<InventoryItem>('/api/inventory-items', { method: 'POST', body: JSON.stringify(payload) })
   }
 
   updateInventoryItem(id: number, payload: Record<string, unknown>) {
-    return this.request<InventoryItem>(`/api/inventory-items/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    })
+    return this.request<InventoryItem>(`/api/inventory-items/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
   }
 
   deleteInventoryItem(id: number) {
@@ -135,10 +165,7 @@ export class WarehouseApi {
   }
 
   recordMovement(payload: Record<string, unknown>) {
-    return this.request<StockMovement>('/api/inventory-items/movements', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
+    return this.request<StockMovement>('/api/inventory-items/movements', { method: 'POST', body: JSON.stringify(payload) })
   }
 
   listCategories(query: QueryParams) {
@@ -150,17 +177,11 @@ export class WarehouseApi {
   }
 
   createCategory(payload: Record<string, unknown>) {
-    return this.request<Category>('/api/categories', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
+    return this.request<Category>('/api/categories', { method: 'POST', body: JSON.stringify(payload) })
   }
 
   updateCategory(id: number, payload: Record<string, unknown>) {
-    return this.request<Category>(`/api/categories/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    })
+    return this.request<Category>(`/api/categories/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
   }
 
   deleteCategory(id: number) {
@@ -176,17 +197,11 @@ export class WarehouseApi {
   }
 
   createSupplier(payload: Record<string, unknown>) {
-    return this.request<Supplier>('/api/suppliers', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
+    return this.request<Supplier>('/api/suppliers', { method: 'POST', body: JSON.stringify(payload) })
   }
 
   updateSupplier(id: number, payload: Record<string, unknown>) {
-    return this.request<Supplier>(`/api/suppliers/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    })
+    return this.request<Supplier>(`/api/suppliers/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
   }
 
   deleteSupplier(id: number) {
@@ -198,10 +213,7 @@ export class WarehouseApi {
   }
 
   createPurchaseOrder(payload: Record<string, unknown>) {
-    return this.request<PurchaseOrder>('/api/purchase-orders', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
+    return this.request<PurchaseOrder>('/api/purchase-orders', { method: 'POST', body: JSON.stringify(payload) })
   }
 
   receivePurchaseOrder(id: number) {
@@ -213,10 +225,7 @@ export class WarehouseApi {
   }
 
   createSalesOrder(payload: Record<string, unknown>) {
-    return this.request<SalesOrder>('/api/sales-orders', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
+    return this.request<SalesOrder>('/api/sales-orders', { method: 'POST', body: JSON.stringify(payload) })
   }
 
   shipSalesOrder(id: number) {
@@ -228,17 +237,11 @@ export class WarehouseApi {
   }
 
   createUser(payload: Record<string, unknown>) {
-    return this.request<UserItem>('/api/users', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
+    return this.request<UserItem>('/api/users', { method: 'POST', body: JSON.stringify(payload) })
   }
 
   updateUser(id: number, payload: Record<string, unknown>) {
-    return this.request<UserItem>(`/api/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    })
+    return this.request<UserItem>(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
   }
 
   deleteUser(id: number) {
@@ -254,17 +257,11 @@ export class WarehouseApi {
   }
 
   createRole(payload: Record<string, unknown>) {
-    return this.request<RoleItem>('/api/roles', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
+    return this.request<RoleItem>('/api/roles', { method: 'POST', body: JSON.stringify(payload) })
   }
 
   updateRole(id: number, payload: Record<string, unknown>) {
-    return this.request<RoleItem>(`/api/roles/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    })
+    return this.request<RoleItem>(`/api/roles/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
   }
 
   deleteRole(id: number) {
@@ -280,64 +277,34 @@ export class WarehouseApi {
   }
 
   createResource(payload: Record<string, unknown>) {
-    return this.request<ResourceItem>('/api/resources', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
+    return this.request<ResourceItem>('/api/resources', { method: 'POST', body: JSON.stringify(payload) })
   }
 
   updateResource(id: number, payload: Record<string, unknown>) {
-    return this.request<ResourceItem>(`/api/resources/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    })
+    return this.request<ResourceItem>(`/api/resources/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
   }
 
   deleteResource(id: number) {
     return this.request<void>(`/api/resources/${id}`, { method: 'DELETE' })
   }
 
-  private buildPath(path: string, query?: QueryParams) {
-    if (!query) {
-      return path
+  private buildUrl(path: string, query?: QueryParams) {
+    const url = new URL(`${this.normalizedBaseUrl}${path.startsWith('/') ? path : `/${path}`}`)
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== '' && value != null) url.searchParams.set(key, String(value))
+      })
     }
+    return url.toString()
+  }
 
+  private buildPath(path: string, query?: QueryParams) {
+    if (!query) return path
     const params = new URLSearchParams()
     Object.entries(query).forEach(([key, value]) => {
-      if (value !== '' && value != null) {
-        params.set(key, String(value))
-      }
+      if (value !== '' && value != null) params.set(key, String(value))
     })
-
     const suffix = params.toString()
     return suffix ? `${path}?${suffix}` : path
   }
-}
-
-function encodeBase64(value: string) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-  const utf8 = encodeUtf8(value)
-  let result = ''
-
-  for (let index = 0; index < utf8.length; index += 3) {
-    const byte1 = utf8.charCodeAt(index)
-    const hasByte2 = index + 1 < utf8.length
-    const hasByte3 = index + 2 < utf8.length
-    const byte2 = hasByte2 ? utf8.charCodeAt(index + 1) : 0
-    const byte3 = hasByte3 ? utf8.charCodeAt(index + 2) : 0
-
-    const block = (byte1 << 16) | (byte2 << 8) | byte3
-    result += chars[(block >> 18) & 63]
-    result += chars[(block >> 12) & 63]
-    result += hasByte2 ? chars[(block >> 6) & 63] : '='
-    result += hasByte3 ? chars[block & 63] : '='
-  }
-
-  return result
-}
-
-function encodeUtf8(value: string) {
-  return encodeURIComponent(value).replace(/%([0-9A-F]{2})/g, (_, hex: string) =>
-    String.fromCharCode(parseInt(hex, 16)),
-  )
 }
