@@ -97,6 +97,11 @@ public class SupplierService {
                 .orElseThrow(() -> new EntityNotFoundException("Supplier not found: " + id));
     }
 
+    /** Batch-load suppliers by ID — single WHERE id IN (...) query. */
+    public List<Supplier> findAllById(List<Long> ids) {
+        return supplierRepository.findAllById(ids);
+    }
+
     public Supplier upsertSeed(String code,
                                String name,
                                String contactPerson,

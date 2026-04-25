@@ -16,10 +16,27 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
             """)
     Page<PurchaseOrder> searchByStructuredKeyword(String keyword, Pageable pageable);
 
-    @Query("""
-            select p from PurchaseOrder p
-            where lower(p.inventoryItem.name) like lower(concat('%', :keyword, '%'))
-               or lower(p.supplier.name) like lower(concat('%', :keyword, '%'))
-            """)
+    @Query(value = """
+            SELECT * FROM purchase_order
+            WHERE MATCH(search_text) AGAINST (:keyword IN BOOLEAN MODE)
+            ORDER BY MATCH(search_text) AGAINST (:keyword IN BOOLEAN MODE) DESC
+            """,
+            countQuery = """
+            SELECT COUNT(*) FROM purchase_order
+            WHERE MATCH(search_text) AGAINST (:keyword IN BOOLEAN MODE)
+            """,
+            nativeQuery = true)
     Page<PurchaseOrder> searchByTextKeyword(String keyword, Pageable pageable);
+
+    @Query(value = """
+            SELECT * FROM purchase_order
+            WHERE search_text LIKE CONCAT('%', :keyword, '%')
+            ORDER BY id DESC
+            """,
+            countQuery = """
+            SELECT COUNT(*) FROM purchase_order
+            WHERE search_text LIKE CONCAT('%', :keyword, '%')
+            """,
+            nativeQuery = true)
+    Page<PurchaseOrder> searchByShortTextKeyword(String keyword, Pageable pageable);
 }

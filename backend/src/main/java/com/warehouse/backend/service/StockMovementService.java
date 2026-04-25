@@ -9,6 +9,7 @@ import com.warehouse.backend.entity.SalesOrder;
 import com.warehouse.backend.entity.StockMovement;
 import com.warehouse.backend.entity.StockMovementType;
 import com.warehouse.backend.entity.Supplier;
+import com.warehouse.backend.repository.InventoryAggregateStats;
 import com.warehouse.backend.repository.InventoryItemRepository;
 import com.warehouse.backend.repository.StockMovementRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -21,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -47,43 +50,54 @@ public class StockMovementService {
     public Page<StockMovement> findPage(String keyword, StockMovementType type, Long supplierId, int page, int size, String sortBy, String sortDir) {
         String normalizedKeyword = SearchKeywordSupport.normalizeKeyword(keyword);
         Sort sort = SortSupport.resolveSort(sortBy, sortDir, "occurredAt", ALLOWED_SORT_FIELDS);
+        String typeStr = type == null ? null : type.name();
         if (normalizedKeyword == null) {
             return stockMovementRepository.findPageByFilters(type, supplierId, PageRequest.of(page, size, sort));
         }
         if (SearchKeywordSupport.isStructuredKeyword(normalizedKeyword)) {
             return stockMovementRepository.searchByStructuredKeyword(normalizedKeyword, type, supplierId, PageRequest.of(page, size, sort));
         }
-        return stockMovementRepository.searchByTextKeyword(normalizedKeyword, type, supplierId, PageRequest.of(page, size, sort));
+        if (SearchKeywordSupport.needsShortKeywordFallback(normalizedKeyword)) {
+            return stockMovementRepository.searchByShortTextKeyword(
+                    normalizedKeyword.toLowerCase(), typeStr, supplierId, PageRequest.of(page, size));
+        }
+        return stockMovementRepository.searchByTextKeyword(
+                SearchKeywordSupport.prepareFtsKeyword(normalizedKeyword), typeStr, supplierId, PageRequest.of(page, size));
     }
 
     @Transactional(readOnly = true)
     public InventorySummaryResponse summary() {
-        List<StockMovement> recentMovements = stockMovementRepository.findTop10ByOrderByOccurredAtDescIdDesc();
-        long totalItems = inventoryItemRepository.count();
-        long totalOnHandQuantity = inventoryItemRepository.sumOnHandQuantity();
-        long totalInTransitQuantity = inventoryItemRepository.sumInTransitQuantity();
-        long totalCommittedQuantity = inventoryItemRepository.sumCommittedQuantity();
-        long totalAvailableQuantity = totalOnHandQuantity - totalCommittedQuantity;
-        long lowStockItems = inventoryItemRepository.countLowStockItems(LOW_STOCK_THRESHOLD);
+        // Query 1: all inventory-item aggregates in one shot (replaces 7 individual queries)
+        InventoryAggregateStats stats = inventoryItemRepository.aggregateStats(LOW_STOCK_THRESHOLD);
 
-        long totalPurchaseQuantity = stockMovementRepository.sumQuantityByType(StockMovementType.PURCHASE);
-        long totalSaleQuantity = stockMovementRepository.sumQuantityByType(StockMovementType.SALE);
-        BigDecimal totalInventoryCost = defaultMoney(inventoryItemRepository.sumInventoryCost());
-        BigDecimal totalSalesRevenue = defaultMoney(inventoryItemRepository.sumSalesRevenue());
-        BigDecimal totalSalesCost = defaultMoney(inventoryItemRepository.sumSalesCost());
+        // Query 2: purchase + sale totals in one GROUP BY query (replaces 2 individual queries)
+        Map<StockMovementType, Long> qtyByType = new EnumMap<>(StockMovementType.class);
+        for (Object[] row : stockMovementRepository.sumQuantitiesByTypes(
+                List.of(StockMovementType.PURCHASE, StockMovementType.SALE))) {
+            qtyByType.put((StockMovementType) row[0], ((Number) row[1]).longValue());
+        }
+        long totalPurchaseQuantity = qtyByType.getOrDefault(StockMovementType.PURCHASE, 0L);
+        long totalSaleQuantity = qtyByType.getOrDefault(StockMovementType.SALE, 0L);
+
+        // Query 3: recent movements (unchanged)
+        List<StockMovement> recentMovements = stockMovementRepository.findTop10ByOrderByOccurredAtDescIdDesc();
+
+        long totalOnHandQuantity = stats.getTotalOnHandQuantity();
+        BigDecimal totalSalesRevenue = defaultMoney(stats.getTotalSalesRevenue());
+        BigDecimal totalSalesCost = defaultMoney(stats.getTotalSalesCost());
         BigDecimal totalSalesProfit = totalSalesRevenue.subtract(totalSalesCost).setScale(2, RoundingMode.HALF_UP);
 
         return new InventorySummaryResponse(
-                totalItems,
+                stats.getTotalItems(),
                 totalOnHandQuantity,
                 totalOnHandQuantity,
-                totalInTransitQuantity,
-                totalCommittedQuantity,
-                totalAvailableQuantity,
-                lowStockItems,
+                stats.getTotalInTransitQuantity(),
+                stats.getTotalCommittedQuantity(),
+                totalOnHandQuantity - stats.getTotalCommittedQuantity(),
+                stats.getLowStockItems(),
                 totalPurchaseQuantity,
                 totalSaleQuantity,
-                totalInventoryCost,
+                defaultMoney(stats.getTotalInventoryCost()),
                 totalSalesRevenue,
                 totalSalesCost,
                 totalSalesProfit,
@@ -120,6 +134,12 @@ public class StockMovementService {
                 trimToNull(request.remark()),
                 request.occurredAt() == null ? LocalDateTime.now() : request.occurredAt()
         );
+        movement.setSearchText(SearchKeywordSupport.buildSearchText(
+                item.getName(),
+                supplier != null ? supplier.getName() : null,
+                trimToNull(request.partnerName()),
+                trimToNull(request.remark())
+        ));
         return stockMovementRepository.save(movement);
     }
 
@@ -128,18 +148,13 @@ public class StockMovementService {
             return;
         }
 
-        stockMovementRepository.save(new StockMovement(
-                item,
-                null,
-                StockMovementType.OPENING,
-                quantity,
-                quantity,
-                BigDecimal.ZERO,
-                "OPENING",
-                null,
-                remark,
-                LocalDateTime.now()
-        ));
+        StockMovement m = new StockMovement(
+                item, null, StockMovementType.OPENING,
+                quantity, quantity, BigDecimal.ZERO,
+                "OPENING", null, remark, LocalDateTime.now()
+        );
+        m.setSearchText(SearchKeywordSupport.buildSearchText(item.getName(), remark));
+        stockMovementRepository.save(m);
     }
 
     public void createAdjustmentMovement(InventoryItem item, int quantityDelta, String remark) {
@@ -148,48 +163,43 @@ public class StockMovementService {
         }
 
         StockMovementType type = quantityDelta > 0 ? StockMovementType.ADJUSTMENT_IN : StockMovementType.ADJUSTMENT_OUT;
-        stockMovementRepository.save(new StockMovement(
-                item,
-                null,
-                type,
-                Math.abs(quantityDelta),
-                quantityDelta,
-                null,
-                "MANUAL-EDIT",
-                null,
-                remark,
-                LocalDateTime.now()
-        ));
+        StockMovement m = new StockMovement(
+                item, null, type,
+                Math.abs(quantityDelta), quantityDelta, null,
+                "MANUAL-EDIT", null, remark, LocalDateTime.now()
+        );
+        m.setSearchText(SearchKeywordSupport.buildSearchText(item.getName(), remark));
+        stockMovementRepository.save(m);
     }
 
     public void recordPurchaseReceipt(PurchaseOrder order) {
-        stockMovementRepository.save(new StockMovement(
-                order.getInventoryItem(),
-                order.getSupplier(),
-                StockMovementType.PURCHASE,
-                order.getQuantity(),
-                order.getQuantity(),
-                order.getUnitPrice(),
-                order.getReferenceNo(),
+        StockMovement m = new StockMovement(
+                order.getInventoryItem(), order.getSupplier(), StockMovementType.PURCHASE,
+                order.getQuantity(), order.getQuantity(), order.getUnitPrice(),
+                order.getReferenceNo(), order.getSupplier().getName(),
+                order.getRemark(), order.getReceivedAt()
+        );
+        m.setSearchText(SearchKeywordSupport.buildSearchText(
+                order.getInventoryItem().getName(),
                 order.getSupplier().getName(),
-                order.getRemark(),
-                order.getReceivedAt()
+                order.getRemark()
         ));
+        stockMovementRepository.save(m);
     }
 
     public void recordSalesShipment(SalesOrder order) {
-        stockMovementRepository.save(new StockMovement(
-                order.getInventoryItem(),
-                null,
-                StockMovementType.SALE,
-                order.getQuantity(),
-                -order.getQuantity(),
-                order.getUnitPrice(),
-                order.getReferenceNo(),
+        StockMovement m = new StockMovement(
+                order.getInventoryItem(), null, StockMovementType.SALE,
+                order.getQuantity(), -order.getQuantity(), order.getUnitPrice(),
+                order.getReferenceNo(), order.getCustomerName(),
+                order.getRemark(), order.getShippedAt()
+        );
+        m.setSearchText(SearchKeywordSupport.buildSearchText(
+                order.getInventoryItem().getName(),
                 order.getCustomerName(),
-                order.getRemark(),
-                order.getShippedAt()
+                order.getRemark()
         ));
+        stockMovementRepository.save(m);
     }
 
     public void deleteByInventoryItemId(Long inventoryItemId) {

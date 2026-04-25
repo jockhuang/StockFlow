@@ -60,6 +60,10 @@ public class PurchaseOrder {
 
     private LocalDateTime receivedAt;
 
+    /** Denormalized full-text search corpus (item name + supplier name). Set once at creation. */
+    @Column(name = "search_text", columnDefinition = "TEXT", nullable = false)
+    private String searchText = "";
+
     protected PurchaseOrder() {
     }
 
@@ -90,6 +94,10 @@ public class PurchaseOrder {
     public PurchaseOrderStatus getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getReceivedAt() { return receivedAt; }
+
+    public void setSearchText(String searchText) {
+        this.searchText = searchText == null ? "" : searchText;
+    }
 
     public void markReceived(LocalDateTime receivedAt) {
         this.status = PurchaseOrderStatus.RECEIVED;

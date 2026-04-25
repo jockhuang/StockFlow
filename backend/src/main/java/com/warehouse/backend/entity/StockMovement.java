@@ -65,6 +65,10 @@ public class StockMovement {
     @Column(nullable = false)
     private LocalDateTime occurredAt;
 
+    /** Denormalized full-text search corpus. Set once at creation; movements are immutable. */
+    @Column(name = "search_text", columnDefinition = "TEXT", nullable = false)
+    private String searchText = "";
+
     protected StockMovement() {
     }
 
@@ -88,6 +92,10 @@ public class StockMovement {
         this.partnerName = partnerName;
         this.remark = remark;
         this.occurredAt = occurredAt;
+    }
+
+    public void setSearchText(String searchText) {
+        this.searchText = searchText == null ? "" : searchText;
     }
 
     public Long getId() {

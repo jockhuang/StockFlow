@@ -13,8 +13,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -46,8 +48,14 @@ public class InventoryService {
             items = inventoryItemRepository.findAll(PageRequest.of(page, size, sort));
         } else if (SearchKeywordSupport.isStructuredKeyword(normalizedKeyword)) {
             items = inventoryItemRepository.searchByStructuredKeyword(normalizedKeyword, PageRequest.of(page, size, sort));
+        } else if (SearchKeywordSupport.needsShortKeywordFallback(normalizedKeyword)) {
+            // keyword has words < FTS_MIN_WORD_LENGTH — fall back to LIKE on search_text
+            items = inventoryItemRepository.searchByShortTextKeyword(
+                    normalizedKeyword.toLowerCase(), PageRequest.of(page, size));
         } else {
-            items = inventoryItemRepository.searchByTextKeyword(normalizedKeyword, PageRequest.of(page, size, sort));
+            // FULLTEXT: sort by relevance score (most relevant first)
+            items = inventoryItemRepository.searchByTextKeyword(
+                    SearchKeywordSupport.prepareFtsKeyword(normalizedKeyword), PageRequest.of(page, size));
         }
         items.forEach(item -> Hibernate.initialize(item.getSuppliers()));
         return items;
@@ -56,6 +64,7 @@ public class InventoryService {
     public InventoryItem create(InventoryRequest request) {
         Category category = categoryService.requireCategory(request.categoryId());
         InventoryItem item = new InventoryItem(request.sku(), request.name(), request.quantity(), request.location(), category);
+        item.setSearchText(SearchKeywordSupport.buildSearchText(item.getName(), category.getName()));
         syncSuppliers(item, resolveSuppliers(request.supplierIds()));
         InventoryItem saved = inventoryItemRepository.save(item);
         Hibernate.initialize(saved.getSuppliers());
@@ -68,6 +77,7 @@ public class InventoryService {
         Category category = categoryService.requireCategory(request.categoryId());
         int previousQuantity = item.getQuantity();
         item.update(request.sku(), request.name(), request.quantity(), request.location(), category);
+        item.setSearchText(SearchKeywordSupport.buildSearchText(item.getName(), category.getName()));
         syncSuppliers(item, resolveSuppliers(request.supplierIds()));
         stockMovementService.createAdjustmentMovement(item, request.quantity() - previousQuantity, "Manual stock correction from item edit");
         Hibernate.initialize(item.getSuppliers());
@@ -105,16 +115,28 @@ public class InventoryService {
                 .orElseThrow(() -> new EntityNotFoundException("Inventory item not found: " + id));
     }
 
+    /** Checks supplier linkage with a single EXISTS query — no collection loading. */
+    @Transactional(readOnly = true)
+    public boolean isSupplierLinked(Long itemId, Long supplierId) {
+        return inventoryItemRepository.existsByIdAndSuppliersId(itemId, supplierId);
+    }
+
     private Set<Supplier> resolveSuppliers(List<Long> supplierIds) {
         if (supplierIds == null || supplierIds.isEmpty()) {
             return new LinkedHashSet<>();
         }
 
-        Set<Supplier> suppliers = new LinkedHashSet<>();
-        for (Long supplierId : supplierIds) {
-            suppliers.add(supplierService.requireSupplier(supplierId));
+        // findAllById issues a single WHERE id IN (...) query instead of N individual SELECTs
+        List<Supplier> found = supplierService.findAllById(supplierIds);
+        if (found.size() != supplierIds.size()) {
+            throw new EntityNotFoundException("One or more supplier IDs not found: " + supplierIds);
         }
-        return suppliers;
+        // preserve the caller-specified ordering
+        Map<Long, Supplier> byId = new LinkedHashMap<>();
+        found.forEach(s -> byId.put(s.getId(), s));
+        Set<Supplier> ordered = new LinkedHashSet<>();
+        supplierIds.forEach(id -> ordered.add(byId.get(id)));
+        return ordered;
     }
 
     private void syncSuppliers(InventoryItem item, Set<Supplier> targetSuppliers) {

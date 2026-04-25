@@ -66,6 +66,10 @@ public class InventoryItem {
     )
     private Set<Supplier> suppliers = new LinkedHashSet<>();
 
+    /** Denormalized full-text search corpus (name + category name). Maintained by InventoryService. */
+    @Column(name = "search_text", columnDefinition = "TEXT", nullable = false)
+    private String searchText = "";
+
     protected InventoryItem() {
     }
 
@@ -182,6 +186,14 @@ public class InventoryItem {
         BigDecimal cost = normalizedAverageUnitCost().multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.HALF_UP);
         this.totalSalesRevenue = normalizedRevenue().add(revenue).setScale(2, RoundingMode.HALF_UP);
         this.totalSalesCost = normalizedSalesCost().add(cost).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    public String getSearchText() {
+        return searchText;
+    }
+
+    public void setSearchText(String searchText) {
+        this.searchText = searchText == null ? "" : searchText;
     }
 
     public void update(String sku, String name, Integer onHandQuantity, String location, Category category) {

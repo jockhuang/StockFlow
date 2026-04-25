@@ -42,7 +42,12 @@ public class SalesOrderService {
         if (SearchKeywordSupport.isStructuredKeyword(normalizedKeyword)) {
             return salesOrderRepository.searchByStructuredKeyword(normalizedKeyword, PageRequest.of(page, size, sort));
         }
-        return salesOrderRepository.searchByTextKeyword(normalizedKeyword, PageRequest.of(page, size, sort));
+        if (SearchKeywordSupport.needsShortKeywordFallback(normalizedKeyword)) {
+            return salesOrderRepository.searchByShortTextKeyword(
+                    normalizedKeyword.toLowerCase(), PageRequest.of(page, size));
+        }
+        return salesOrderRepository.searchByTextKeyword(
+                SearchKeywordSupport.prepareFtsKeyword(normalizedKeyword), PageRequest.of(page, size));
     }
 
     public SalesOrder create(SalesOrderRequest request) {
@@ -52,7 +57,7 @@ public class SalesOrderService {
         }
 
         item.adjustCommittedQuantity(request.quantity());
-        return salesOrderRepository.save(new SalesOrder(
+        SalesOrder order = new SalesOrder(
                 item,
                 request.quantity(),
                 request.unitPrice(),
@@ -60,7 +65,9 @@ public class SalesOrderService {
                 trimToNull(request.referenceNo()),
                 trimToNull(request.remark()),
                 LocalDateTime.now()
-        ));
+        );
+        order.setSearchText(SearchKeywordSupport.buildSearchText(item.getName(), trimToNull(request.customerName())));
+        return salesOrderRepository.save(order);
     }
 
     public SalesOrder ship(Long id) {
